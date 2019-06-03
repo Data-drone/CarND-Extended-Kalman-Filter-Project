@@ -14,19 +14,19 @@ KalmanFilter::~KalmanFilter() {}
 
 void KalmanFilter::Init(VectorXd &x_in, MatrixXd &P_in, MatrixXd &F_in,
                         MatrixXd &H_in, MatrixXd &R_in, MatrixXd &Q_in) {
-  x_ = x_in;
-  P_ = P_in;
-  F_ = F_in;
-  H_ = H_in;
-  R_ = R_in;
-  Q_ = Q_in;
+  x_ = x_in; // updated in function
+  P_ = P_in; // updated in function
+  F_ = F_in; // fixed from outside
+  H_ = H_in; // specified prior to execution of update
+  R_ = R_in; // specified prior to execution of update
+  Q_ = Q_in; // fixed from outside
 }
 
 void KalmanFilter::Predict() {
   /**
    * TODO: predict the state
    */
-
+  //VectorXd predict_x;
   x_ = F_ * x_;
   MatrixXd Ft = F_.transpose();
   P_ = F_ * P_ * Ft + Q_;
@@ -62,15 +62,42 @@ void KalmanFilter::UpdateEKF(const VectorXd &z) {
   // intermediate processing
 
   // h(x)
-  VectorXd hx;
-  float rho, phi, rho_dot = 0;
+  VectorXd hx = VectorXd(3);
+  double rho, phi, rho_dot = 0.0;
+  // detect small ps
+  if (x_[0]  == 0) {
+    x_[0] += 0.000001;
+  }
+
+  if (x_[1]  == 0) {
+    x_[1] += 0.000001;
+  }
+
   double denom = x_[0]*x_[0] + x_[1]*x_[1];
+  if (denom == 0.0) {
+    denom += 0.000001;
+  }
+
   rho = sqrt( denom );
-  phi = atan(x_[1]/x_[0]);
+  
+  phi = atan2(x_[1], x_[0]);
+
+  // normalise angles
+  while (phi > M_PI || phi < -M_PI ) 
+  {
+    if (phi > M_PI) {
+      phi -= M_PI;
+    } else {
+      phi += M_PI;
+    }
+  }
+
   rho_dot = (x_[0]*x_[2] + x_[1]*x_[3] )/sqrt( denom );
+
   hx << rho, phi, rho_dot;
 
   VectorXd y = z - hx;
+
 
   MatrixXd Ht = H_.transpose();
   MatrixXd S = H_ * P_ * Ht + R_;
