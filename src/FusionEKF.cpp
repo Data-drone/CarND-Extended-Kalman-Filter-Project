@@ -64,7 +64,21 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.x_ = VectorXd(4);
     ekf_.x_ << 1, 1, 1, 1;
 
-    
+    ekf_.P_ = MatrixXd(4, 4);
+    ekf_.P_ << 1, 0, 0, 0,
+              0, 1, 0, 0,
+              0, 0, 1000, 0,
+              0, 0, 0, 1000;
+
+      // the initial transition matrix F_
+    // we don't need different F's for laser and radar
+    // as we aren't using non linear eqs direct
+    ekf_.F_ = MatrixXd(4, 4);
+    ekf_.F_ << 1, 0, 1, 0,
+              0, 1, 0, 1,
+              0, 0, 1, 0,
+              0, 0, 0, 1;
+
     if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
       // TODO: Convert radar from polar to cartesian coordinates 
       //         and initialize state.
@@ -107,20 +121,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     //cout << endl << "Received Laser" << endl << endl;
   }
 
-  ekf_.P_ = MatrixXd(4, 4);
-  ekf_.P_ << 1, 0, 0, 0,
-              0, 1, 0, 0,
-              0, 0, 1000, 0,
-              0, 0, 0, 1000;
+  
 
-  // the initial transition matrix F_
-  // we don't need different F's for laser and radar
-  // as we aren't using non linear eqs direct
-  ekf_.F_ = MatrixXd(4, 4);
-  ekf_.F_ << 1, 0, 1, 0,
-              0, 1, 0, 1,
-              0, 0, 1, 0,
-              0, 0, 0, 1;
     
   float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;
                 previous_timestamp_ = measurement_pack.timestamp_;
@@ -141,8 +143,8 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
 
 
-  float noise_ax = 5;
-  float noise_ay = 5;
+  float noise_ax = 9;
+  float noise_ay = 9;
 
   //Q - process noise covariance matrix
   float dt_2 = dt * dt;
